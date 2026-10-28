@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Roulette</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Sağ Üstteki Arşiv Butonu -->
+    <button id="btn-show-archive" class="text-btn small-btn" style="position: absolute; top: 20px; right: 20px; z-index: 100;">arşivim</button>
+
+    <!-- Arşiv Paneli (Başlangıçta Gizli) -->
+    <div id="archive-panel" class="archive-overlay hidden">
+        <div class="archive-content">
+            <div class="archive-header">
+                <h2>Geçmiş Araştırmalarım</h2>
+                <span id="btn-close-archive" class="text-btn small-btn">kapat</span>
+            </div>
+            <div id="archive-list" class="archive-list">
+                <!-- Kayıtlar buraya JS ile otomatik eklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container" id="main-container">
+        
+        <!-- SOL PANEL: Konu, Süre ve Sayaç -->
+        <div class="left-panel">
+            
+            <!-- Konu Kutusu -->
+            <div class="topic-box" id="topic-box">
+                konuların yazacağı alan takvim
+            </div>
+
+            <!-- ADIM 1: Başlat Butonu -->
+            <div id="step-1-start" class="action-area">
+                <span class="text-btn" id="btn-start">başlat</span>
+            </div>
+
+            <!-- ADIM 2: Karar Aşaması (Başlangıçta Gizli) -->
+            <div id="step-2-decision" class="action-area hidden">
+                <span class="text-btn" id="btn-continue">devam</span>
+                <span class="text-btn" id="btn-retry">tekrar dene</span>
+            </div>
+
+            <!-- ADIM 3: Süre Seçimi (Başlangıçta Gizli) -->
+            <div id="step-3-timesetup" class="action-area flex-row hidden">
+                <span class="side-label">süre seç:</span>
+                <div class="dark-box input-box">
+                    <input type="number" id="time-input" placeholder="dk" min="1">
+                </div>
+                <span class="text-btn small-btn" id="btn-start-timer">başla</span>
+            </div>
+
+            <!-- ADIM 4: Sayaç (Başlangıçta Gizli) -->
+            <div id="step-4-timer" class="action-area flex-row hidden">
+                <span class="side-label">kalan zaman:</span>
+                <div class="dark-box timer-box" id="time-display">
+                    00:00
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SAĞ PANEL: Not Defteri (Başlangıçta Gizli) -->
+        <div class="right-panel hidden" id="notepad-panel">
+            <textarea class="notepad-input" placeholder="kullanıcının süre bitince not aldığı alan"></textarea>
+            <span class="text-btn small-btn align-right" id="btn-save">kaydet</span>
+        </div>
+
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

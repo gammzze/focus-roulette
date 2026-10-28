@@ -1,0 +1,161 @@
+:root {
+    /* Senin tasarımlarından alınan renk paleti */
+    --bg-gradient: radial-gradient(circle at center, #4a3b32 0%, #1a1512 100%);
+    --box-bg: #1e1511; /* Koyu kahve/siyah kutular */
+    --notepad-bg: #8b7355; /* Sütlü kahve not alanı */
+    --text-color: #000000; /* Buton yazıları siyah/koyu */
+    --text-light: #ffffff; /* Kutu içi yazılar beyaz */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-color);
+}
+
+/* Ana düzen: Başlangıçta tek sütun, not defteri açılınca iki sütun olacak */
+.main-container {
+    display: flex;
+    gap: 40px;
+    width: 90%;
+    max-width: 1000px;
+    justify-content: center;
+    transition: all 0.5s ease;
+}
+
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 450px;
+    transition: all 0.5s ease;
+}
+
+/* Standart Koyu Kutular (Konu ve Zaman) */
+.topic-box, .dark-box {
+    background-color: var(--box-bg);
+    color: var(--text-light);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-weight: 600;
+}
+
+.topic-box {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 50px;
+    font-size: 1.1rem;
+    padding: 20px;
+}
+
+/* Alt kısımdaki aksiyon alanları (butonlar, sayaç) */
+.action-area {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    min-height: 80px;
+    align-items: center;
+}
+
+/* Yan yana duran metin ve kutu (Süre seç ve Kalan zaman) */
+.flex-row {
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.side-label {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Kutusuz Metin Butonları (başlat, devam, tekrar dene) */
+.text-btn {
+    font-size: 2.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.text-btn:hover {
+    transform: scale(1.05);
+    opacity: 0.7;
+}
+
+.small-btn {
+    font-size: 1.5rem;
+}
+
+/* Süre Giriş Kutusu */
+.input-box {
+    width: 120px;
+    height: 120px;
+}
+
+.input-box input {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    outline: none;
+}
+
+/* Sayaç Kutusu */
+.timer-box {
+    width: 150px;
+    height: 120px;
+    font-size: 2.5rem;
+}
+
+/* SAĞ PANEL: Not Defteri */
+.right-panel {
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.notepad-input {
+    width: 100%;
+    height: 400px;
+    background-color: var(--notepad-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    padding: 20px;
+    font-size: 1.1rem;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+}
+
+.notepad-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.align-right {
+    align-self: flex-end;
+}
+
+/* Elemanları gizlemek için sınıf */
+.hidden {
+    display: none !important;
+}
