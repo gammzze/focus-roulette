@@ -1,5 +1,3 @@
-// --- 1. DEĞİŞKENLER VE KONU HAVUZU ---
-// Buraya istediğin kadar araştırma konusu ekleyebilirsin
 const topics = [
     // --- TEKNOLOJİ, YAZILIM VE GELECEK ---
     "Yapay zeka modellerinde karar süreçleri ve SHAP açıklanabilirliği",
@@ -314,215 +312,276 @@ const topics = [
     "Hayvan destekli terapilerin, evcil hayvan bakımının yalnızlık, anksiyete, depresyon ve insan psikolojisindeki şifalandırıcı bağ kurma rolü"
 ];
 
-// HTML'deki elemanları (kutuları ve butonları) JavaScript'e çekiyoruz
-const topicBox = document.getElementById('topic-box');
-const step1Start = document.getElementById('step-1-start');
-const step2Decision = document.getElementById('step-2-decision');
-const btnStart = document.getElementById('btn-start');
-const btnRetry = document.getElementById('btn-retry');
+// ELEMANLAR
+const $ = (id) => document.getElementById(id);
+const focusModal = $('focus-modal');
+const archiveModal = $('archive-modal');
+const heroArchiveList = $('hero-archive-list');
+const archiveSearch = $('archive-search');
+const topicBox = $('topic-box');
+const step1Start = $('step-1-start');
+const step2Decision = $('step-2-decision');
+const step3TimeSetup = $('step-3-timesetup');
+const step4Timer = $('step-4-timer');
+const timeInput = $('time-input');
+const timeDisplay = $('time-display');
+const btnPause = $('btn-pause');
+const btnFinish = $('btn-finish');
+const progressTrack = $('progress-track');
+const progressFill = $('progress-fill');
+const notepadPanel = $('notepad-panel');
+const notepadInput = document.querySelector('.notepad-input');
 
-let flipInterval; // Dönen takvim sayacını tutacağımız değişken
-let isFlipping = false; // Animasyon oynarken tekrar tıklanmasını önlemek için
+const STORAGE_KEY = 'focusRouletteArchive';
+const DEFAULT_TITLE = document.title;
+let flipTimeout, countdownInterval;
+let totalSeconds = 0, plannedSeconds = 0, paused = false;
+let currentTopic = '';
 
-// Sayfa ilk yüklendiğinde kutuda yazacak mesaj
-topicBox.innerText = "Konu çekmek için başlata bas...";
+// YARDIMCILAR
+const loadArchive = () => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+};
+const saveArchive = (a) => localStorage.setItem(STORAGE_KEY, JSON.stringify(a));
+const escapeHtml = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (sec) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
 
-// --- 2. TAKVİM YAPRAĞI GİBİ DÖNME (ANİMASYON) FONKSİYONU ---
-function startRoulette() {
-    // Eğer zaten dönüyorsa, tekrar çalışmasını engelle
-    if (isFlipping) return;
-    isFlipping = true;
-
-    // 1. Adımdaki "başlat" butonunu gizle
-    step1Start.classList.add('hidden');
-    // Eğer 2. adımdan (tekrar dene'den) geliyorsa orayı da gizle
-    step2Decision.classList.add('hidden');
-
-    // Hızlıca konuları değiştirme (setInterval ile her 60 milisaniyede bir)
-    flipInterval = setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * topics.length);
-        topicBox.innerText = topics[randomIndex];
-    }, 60); // 60ms = takvim yapraklarının dönme hızı
-
-    // 2.5 saniye sonra animasyonu durdur ve nihai konuyu seç (setTimeout)
-    setTimeout(() => {
-        clearInterval(flipInterval); // Hızlı dönmeyi durdur
-        
-        // Son bir nihai rastgele konu seç ve ekrana bas
-        const finalTopic = topics[Math.floor(Math.random() * topics.length)];
-        topicBox.innerText = finalTopic;
-        
-        isFlipping = false;
-
-        // 2. Adım butonlarını (devam / tekrar dene) ekranda göster
-        step2Decision.classList.remove('hidden');
-    }, 2500); // 2500 milisaniye (2.5 saniye) sonra duracak
+function toast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 2500);
 }
 
-// --- 3. BUTONLARA TIKLANMA OLAYLARINI (EVENT) DİNLEME ---
+function chime() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [523.25, 659.25, 783.99].forEach((f, i) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            const t0 = ctx.currentTime + i * 0.25;
+            o.frequency.value = f; o.type = 'sine';
+            g.gain.setValueAtTime(0.0001, t0);
+            g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.8);
+            o.connect(g).connect(ctx.destination);
+            o.start(t0); o.stop(t0 + 0.9);
+        });
+    } catch { /* ses desteklenmiyor */ }
+}
 
-// "başlat" yazısına tıklanınca çarkı döndür
-btnStart.addEventListener('click', startRoulette);
+// İSTATİSTİKLER
+function updateStats() {
+    const archive = loadArchive();
+    $('stat-count').innerText = archive.length;
+    const totalMinutes = archive.reduce((acc, cur) => acc + (parseFloat(cur.duration) || 0), 0);
+    $('stat-hours').innerText = `${(totalMinutes / 60).toFixed(1)} sa`;
 
-// "tekrar dene" yazısına tıklanınca çarkı baştan döndür
-btnRetry.addEventListener('click', startRoulette);
+    // Seri: bugünden (veya dünden) geriye ardışık çalışılan gün sayısı
+    const days = new Set(archive.map(r => new Date(r.id).toDateString()));
+    let streak = 0;
+    const d = new Date();
+    if (!days.has(d.toDateString())) d.setDate(d.getDate() - 1);
+    while (days.has(d.toDateString())) { streak++; d.setDate(d.getDate() - 1); }
+    $('stat-streak').innerText = `${streak} gün`;
+}
+document.addEventListener('DOMContentLoaded', updateStats);
 
-// --- 4. ZAMANLAYICI VE NOT DEFTERİ İÇİN GEREKLİ ELEMANLAR ---
-const btnContinue = document.getElementById('btn-continue');
-const step3TimeSetup = document.getElementById('step-3-timesetup');
-const timeInput = document.getElementById('time-input');
-const btnStartTimer = document.getElementById('btn-start-timer');
-const step4Timer = document.getElementById('step-4-timer');
-const timeDisplay = document.getElementById('time-display');
-const notepadPanel = document.getElementById('notepad-panel');
-const btnSave = document.getElementById('btn-save');
+// MODAL AÇ/KAPAT
+function resetSession() {
+    clearTimeout(flipTimeout);
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+    paused = false;
+    btnPause.innerText = 'duraklat';
+    timeDisplay.classList.remove('paused');
+    topicBox.classList.remove('spinning');
+    document.title = DEFAULT_TITLE;
+    [step2Decision, step3TimeSetup, step4Timer, notepadPanel, progressTrack].forEach(el => el.classList.add('hidden'));
+    [btnPause, btnFinish].forEach(el => el.classList.remove('hidden'));
+    step1Start.classList.remove('hidden');
+    topicBox.innerText = 'Konu çekmek için başlata bas...';
+    notepadInput.value = '';
+    timeInput.value = '';
+}
 
-let countdownInterval;
-let totalSeconds;
+function closeFocusModal() {
+    const busy = countdownInterval || notepadInput.value.trim();
+    if (busy && !confirm('Oturum ya da kaydedilmemiş not var. Kapatmak istediğine emin misin?')) return;
+    resetSession();
+    focusModal.classList.add('hidden');
+}
 
-// --- 5. EKRAN GEÇİŞLERİ VE SAYACIN ÇALIŞMASI ---
-
-// "devam" butonuna basılınca süre seçme alanını göster
-btnContinue.addEventListener('click', () => {
-    step2Decision.classList.add('hidden'); // Karar butonlarını gizle
-    step3TimeSetup.classList.remove('hidden'); // Süre girişini aç
+$('btn-open-modal').addEventListener('click', () => { resetSession(); focusModal.classList.remove('hidden'); });
+$('btn-close-modal').addEventListener('click', closeFocusModal);
+$('btn-open-archive').addEventListener('click', () => {
+    archiveSearch.value = '';
+    renderArchive();
+    archiveModal.classList.remove('hidden');
 });
+$('btn-close-archive').addEventListener('click', () => archiveModal.classList.add('hidden'));
 
-// "başla" butonuna basılınca geri sayımı başlat
-btnStartTimer.addEventListener('click', () => {
-    const minutes = parseInt(timeInput.value);
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!archiveModal.classList.contains('hidden')) archiveModal.classList.add('hidden');
+    else if (!focusModal.classList.contains('hidden')) closeFocusModal();
+});
+archiveModal.addEventListener('click', (e) => { if (e.target === archiveModal) archiveModal.classList.add('hidden'); });
 
-    // Kullanıcı geçerli bir süre girmediyse uyar
-    if (isNaN(minutes) || minutes <= 0) {
-        alert("Lütfen geçerli bir dakika (örn: 15) gir!");
+// ARŞİV
+function renderArchive() {
+    const q = archiveSearch.value.trim().toLocaleLowerCase('tr-TR');
+    const archive = loadArchive().slice().reverse()
+        .filter(r => !q || `${r.topic} ${r.note}`.toLocaleLowerCase('tr-TR').includes(q));
+    heroArchiveList.innerHTML = '';
+
+    if (archive.length === 0) {
+        heroArchiveList.innerHTML = `<p class="archive-empty">${q ? 'Eşleşen kayıt bulunamadı.' : 'Henüz araştırma kaydı yok. Çalışmaya başla!'}</p>`;
         return;
     }
 
-    // Dakikayı saniyeye çeviriyoruz
-    totalSeconds = minutes * 60;
-
-    // Ekran geçişi: Süre girme kutusunu gizle, Sayacı göster
-    step3TimeSetup.classList.add('hidden');
-    step4Timer.classList.remove('hidden');
-
-    // Sayacı ekrana ilk kez yazdır
-    updateTimerDisplay();
-
-    // JavaScript'in setInterval motoru ile her 1000ms'de (1 saniye) bir süreyi düşür
-    countdownInterval = setInterval(() => {
-        totalSeconds--;
-        updateTimerDisplay();
-
-        // Süre sıfıra ulaştığında
-        if (totalSeconds <= 0) {
-            clearInterval(countdownInterval); // Sayacı durdur
-            finishTimer(); // Not defterini aç
-        }
-    }, 1000);
-});
-
-// Sayacı dijital saat (MM:SS) formatına çeviren fonksiyon
-function updateTimerDisplay() {
-    const min = Math.floor(totalSeconds / 60);
-    const sec = totalSeconds % 60;
-    
-    // toString().padStart(2, '0') kodu, 9 gibi tek haneli sayıları 09 yapar
-    timeDisplay.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-}
-
-// --- 6. SÜRE BİTİMİ VE NOT ALMA ---
-function finishTimer() {
-    // Süre bitince sağ taraftaki not defteri panelini görünür yap
-    notepadPanel.classList.remove('hidden');
-}
-
-// --- 6. SÜRE BİTİMİ VE NOTLARI LOCALSTORAGE'A KAYDETME ---
-function finishTimer() {
-    notepadPanel.classList.remove('hidden');
-}
-
-btnSave.addEventListener('click', () => {
-    const userNote = document.querySelector('.notepad-input').value;
-    
-    if(userNote.trim() === "") {
-        alert("Lütfen kaydetmeden önce araştırdığın konuyla ilgili birkaç not yaz!");
-        return;
-    }
-
-    // 1. Kaydedilecek verileri toparlıyoruz
-    const currentTopic = topicBox.innerText; // Ekranda yazan konu
-    const timeSpent = timeInput.value;       // Harcanan dakika
-    const today = new Date().toLocaleDateString('tr-TR'); // Günün tarihi
-
-    // 2. Verileri bir obje (Object) haline getiriyoruz
-    const researchRecord = {
-        id: Date.now(), // Benzersiz bir kimlik
-        date: today,
-        topic: currentTopic,
-        duration: timeSpent,
-        note: userNote
-    };
-
-    // 3. LocalStorage'da önceden kaydedilmiş notlar var mı diye bakıyoruz
-    // Varsa onları alıyoruz, yoksa boş bir liste (Array) oluşturuyoruz
-    let archive = JSON.parse(localStorage.getItem('focusRouletteArchive')) || [];
-
-    // 4. Yeni araştırmamızı bu listeye ekliyoruz
-    archive.push(researchRecord);
-
-    // 5. Güncel listeyi tekrar tarayıcının hafızasına (LocalStorage) yazıyoruz
-    localStorage.setItem('focusRouletteArchive', JSON.stringify(archive));
-
-    alert("Harika! Araştırma notların başarıyla kişisel arşivine kaydedildi.");
-
-    // Kayıt bittikten sonra yeni bir araştırma yapabilmek için sayfayı sıfırla/yenile
-    location.reload(); 
-});
-
-// --- 7. ARŞİVİ GÖRÜNTÜLEME VE KAPATMA ---
-const btnShowArchive = document.getElementById('btn-show-archive');
-const archivePanel = document.getElementById('archive-panel');
-const btnCloseArchive = document.getElementById('btn-close-archive');
-const archiveList = document.getElementById('archive-list');
-
-// "arşivim" butonuna tıklayınca paneli aç ve notları yükle
-btnShowArchive.addEventListener('click', () => {
-    archivePanel.classList.remove('hidden');
-    loadArchive();
-});
-
-// "kapat" butonuna tıklayınca paneli gizle
-btnCloseArchive.addEventListener('click', () => {
-    archivePanel.classList.add('hidden');
-});
-
-// Tarayıcı hafızasındaki (LocalStorage) notları ekrana basan fonksiyon
-function loadArchive() {
-    archiveList.innerHTML = ""; // Listeyi temizle
-
-    // LocalStorage'dan arşivi çek (Yoksa boş liste getir)
-    let archive = JSON.parse(localStorage.getItem('focusRouletteArchive')) || [];
-
-    // Eğer henüz hiç not kaydedilmemişse
-    if(archive.length === 0) {
-        archiveList.innerHTML = "<p>Henüz kaydedilmiş bir araştırma notun yok. Haydi ilk konunu araştır!</p>";
-        return;
-    }
-
-    // Listeyi tersine çevir (En son yazdığın not en üstte çıksın)
-    archive.reverse();
-
-    // Her bir kayıt için HTML oluştur ve listeye ekle
-    archive.forEach(record => {
-        const itemDiv = document.createElement('div');
-        itemDiv.classList.add('archive-item');
-
-        itemDiv.innerHTML = `
-            <h3>${record.topic}</h3>
-            <p>🕒 ${record.duration} dakika | 📅 ${record.date}</p>
-            <div class="note-text">${record.note}</div>
+    archive.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'showcase-card';
+        card.innerHTML = `
+            <button class="card-delete" title="Sil" data-id="${escapeHtml(item.id)}">&times;</button>
+            <h3>${escapeHtml(item.topic)}</h3>
+            <div class="meta">⏱ ${escapeHtml(item.duration)} dk | 📅 ${escapeHtml(item.date)}</div>
+            <div class="snippet">${escapeHtml(item.note)}</div>
         `;
-
-        archiveList.appendChild(itemDiv);
+        heroArchiveList.appendChild(card);
     });
 }
+
+archiveSearch.addEventListener('input', renderArchive);
+heroArchiveList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.card-delete');
+    if (!btn || !confirm('Bu kaydı silmek istediğine emin misin?')) return;
+    saveArchive(loadArchive().filter(r => String(r.id) !== btn.dataset.id));
+    renderArchive();
+    updateStats();
+    toast('Kayıt silindi.');
+});
+
+$('btn-export').addEventListener('click', () => {
+    const archive = loadArchive();
+    if (!archive.length) return toast('Dışa aktarılacak kayıt yok.');
+    const md = archive.map(r => `## ${r.topic}\n_${r.date} · ${r.duration} dk_\n\n${r.note}\n`).join('\n---\n\n');
+    const blob = new Blob([`# Focus Roulette Arşivi\n\n${md}`], { type: 'text/markdown' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `focus-roulette-arsiv-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+// ÇARK ANİMASYONU (yavaşlayarak durur)
+function startRoulette() {
+    step1Start.classList.add('hidden');
+    step2Decision.classList.add('hidden');
+    topicBox.classList.add('spinning');
+    clearTimeout(flipTimeout);
+
+    let delay = 40;
+    const tick = () => {
+        topicBox.innerText = topics[Math.floor(Math.random() * topics.length)];
+        delay *= 1.12;
+        if (delay < 450) {
+            flipTimeout = setTimeout(tick, delay);
+        } else {
+            currentTopic = topicBox.innerText;
+            topicBox.classList.remove('spinning');
+            step2Decision.classList.remove('hidden');
+        }
+    };
+    tick();
+}
+
+$('btn-start').addEventListener('click', startRoulette);
+$('btn-retry').addEventListener('click', startRoulette);
+$('btn-continue').addEventListener('click', () => {
+    step2Decision.classList.add('hidden');
+    step3TimeSetup.classList.remove('hidden');
+    timeInput.focus();
+});
+
+// SÜRE
+document.querySelectorAll('.preset-btn').forEach(b =>
+    b.addEventListener('click', () => { timeInput.value = b.dataset.min; startTimer(); }));
+$('btn-start-timer').addEventListener('click', startTimer);
+timeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startTimer(); });
+
+function startTimer() {
+    const minutes = parseInt(timeInput.value, 10);
+    if (isNaN(minutes) || minutes <= 0) return toast('Geçerli bir dakika girin.');
+
+    plannedSeconds = totalSeconds = minutes * 60;
+    step3TimeSetup.classList.add('hidden');
+    step4Timer.classList.remove('hidden');
+    progressTrack.classList.remove('hidden');
+    notepadPanel.classList.remove('hidden'); // çalışırken de not alınabilir
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+
+    updateDisplay();
+    countdownInterval = setInterval(() => {
+        if (paused) return;
+        totalSeconds--;
+        updateDisplay();
+        if (totalSeconds <= 0) finishTimer(true);
+    }, 1000);
+}
+
+function finishTimer(natural) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+    totalSeconds = Math.max(totalSeconds, 0);
+    btnPause.classList.add('hidden');
+    btnFinish.classList.add('hidden');
+    timeDisplay.classList.remove('paused');
+    document.title = '✓ Süre doldu | Focus Roulette';
+    if (natural) {
+        chime();
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Focus Roulette', { body: `Süre doldu! "${currentTopic}" hakkında notlarını kaydet.` });
+        }
+    }
+    toast(natural ? 'Süre doldu! Notlarını kaydetmeyi unutma.' : 'Oturum bitirildi. Notlarını kaydet.');
+    notepadInput.focus();
+}
+
+btnPause.addEventListener('click', () => {
+    paused = !paused;
+    btnPause.innerText = paused ? 'devam et' : 'duraklat';
+    timeDisplay.classList.toggle('paused', paused);
+});
+btnFinish.addEventListener('click', () => finishTimer(false));
+
+function updateDisplay() {
+    timeDisplay.innerText = fmt(totalSeconds);
+    document.title = `${fmt(totalSeconds)} · Focus Roulette`;
+    progressFill.style.width = `${(1 - totalSeconds / plannedSeconds) * 100}%`;
+}
+
+// KAYIT
+$('btn-save').addEventListener('click', () => {
+    const note = notepadInput.value;
+    if (!note.trim()) return toast('Not alanı boş bırakılamaz.');
+
+    const studiedMinutes = Math.max(1, Math.round((plannedSeconds - totalSeconds) / 60));
+    const archive = loadArchive();
+    archive.push({
+        id: Date.now(),
+        date: new Date().toLocaleDateString('tr-TR'),
+        topic: currentTopic,
+        duration: studiedMinutes,
+        note
+    });
+    saveArchive(archive);
+
+    toast('Notun arşive kaydedildi!');
+    updateStats();
+    notepadInput.value = '';
+    resetSession();
+    focusModal.classList.add('hidden');
+});

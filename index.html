@@ -3,73 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Roulette</title>
+    <title>Focus Roulette | Classical Cybernetics</title>
+    <!-- Editorial & Modern Serif Fontlar -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Sağ Üstteki Arşiv Butonu -->
-    <button id="btn-show-archive" class="text-btn small-btn" style="position: absolute; top: 20px; right: 20px; z-index: 100;">arşivim</button>
 
-    <!-- Arşiv Paneli (Başlangıçta Gizli) -->
-    <div id="archive-panel" class="archive-overlay hidden">
-        <div class="archive-content">
-            <div class="archive-header">
-                <h2>Geçmiş Araştırmalarım</h2>
-                <span id="btn-close-archive" class="text-btn small-btn">kapat</span>
+    <!-- Arka Plan Görseli ve Karartma Katmanı -->
+    <div class="bg-overlay"></div>
+
+    <!-- ANA AKIŞ (SCROLLABLE LANDING PAGE) -->
+    <div class="scroll-wrapper">
+        
+        <!-- BÖLÜM 1: HERO (Giriş Ekranı) -->
+        <section class="hero-section">
+            <header class="hero-header">
+                <span class="tagline">DISCOVER & FOCUS</span>
+                <h1>FOCUS ROULETTE</h1>
+                <p class="hero-sub">Rastgele konular, sınırlı süre ve derinlemesine öğrenme deneyimi.</p>
+                
+                <div class="hero-buttons">
+                    <button id="btn-open-modal" class="cta-btn">[ ÇALIŞMAYA BAŞLA ]</button>
+                    <button id="btn-open-archive" class="cta-btn secondary-btn">[ ARŞİVİM ]</button>
+                </div>
+            </header>
+            <div class="scroll-down-indicator">aşağı kaydır ↓</div>
+        </section>
+
+        <!-- BÖLÜM 2: MANİFESTO / FELSEFE (Kayan Alan) -->
+        <section class="philosophy-section">
+            <div class="philosophy-box">
+                <h2>ZAMAN VE BİLGİ</h2>
+                <p>"Gerçek öğrenme, rastlantısal bir merakla başlar ve disiplinli bir odakla şekillenir. Bilgi, sadece aradığın zaman değil, karşına çıktığında üzerine gittiğinde değer kazanır."</p>
             </div>
-            <div id="archive-list" class="archive-list">
-                <!-- Kayıtlar buraya JS ile otomatik eklenecek -->
+        </section>
+
+        <!-- BÖLÜM 3: CANLI İSTATİSTİKLER (Dashboard) -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <span class="stat-number" id="stat-count">0</span>
+                <span class="stat-label">Toplam Araştırma</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="stat-hours">0 sa</span>
+                <span class="stat-label">Odaklanma Süresi</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="stat-streak">0 gün</span>
+                <span class="stat-label">Seri</span>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ARŞİV MODALI (Arşivim butonuna basınca açılır) -->
+    <div id="archive-modal" class="modal-overlay hidden">
+        <div class="modal-content archive-modal-content">
+            <span id="btn-close-archive" class="close-btn">&times;</span>
+            <h2 class="archive-title">GEÇMİŞ ARAŞTIRMALAR</h2>
+            <div class="archive-toolbar">
+                <input type="search" id="archive-search" class="archive-search" placeholder="Konu veya not ara...">
+                <span class="text-btn small-btn" id="btn-export">dışa aktar</span>
+            </div>
+            <div id="hero-archive-list" class="archive-grid">
+                <!-- JS ile kaydedilen notlar buraya dizilecek -->
             </div>
         </div>
     </div>
 
-    <div class="main-container" id="main-container">
-        
-        <!-- SOL PANEL: Konu, Süre ve Sayaç -->
-        <div class="left-panel">
-            
-            <!-- Konu Kutusu -->
-            <div class="topic-box" id="topic-box">
-                konuların yazacağı alan takvim
-            </div>
+    <!-- ODAKLANMA MODALI (Çalışmaya Başla'ya basınca açılır) -->
+    <div id="focus-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <span id="btn-close-modal" class="close-btn">&times;</span>
 
-            <!-- ADIM 1: Başlat Butonu -->
-            <div id="step-1-start" class="action-area">
-                <span class="text-btn" id="btn-start">başlat</span>
-            </div>
+            <div class="modal-body">
+                <!-- SOL PANEL: Konu ve Sayaç -->
+                <div class="left-panel">
+                    <div class="topic-box" id="topic-box">
+                        Konu çekmek için başlata bas...
+                    </div>
 
-            <!-- ADIM 2: Karar Aşaması (Başlangıçta Gizli) -->
-            <div id="step-2-decision" class="action-area hidden">
-                <span class="text-btn" id="btn-continue">devam</span>
-                <span class="text-btn" id="btn-retry">tekrar dene</span>
-            </div>
+                    <!-- ADIM 1: Başlat -->
+                    <div id="step-1-start" class="action-area">
+                        <span class="text-btn" id="btn-start">başlat</span>
+                    </div>
 
-            <!-- ADIM 3: Süre Seçimi (Başlangıçta Gizli) -->
-            <div id="step-3-timesetup" class="action-area flex-row hidden">
-                <span class="side-label">süre seç:</span>
-                <div class="dark-box input-box">
-                    <input type="number" id="time-input" placeholder="dk" min="1">
+                    <!-- ADIM 2: Karar -->
+                    <div id="step-2-decision" class="action-area hidden">
+                        <span class="text-btn" id="btn-continue">devam</span>
+                        <span class="text-btn" id="btn-retry">tekrar dene</span>
+                    </div>
+
+                    <!-- ADIM 3: Süre Seçimi -->
+                    <div id="step-3-timesetup" class="action-area flex-row hidden">
+                        <div class="preset-row">
+                            <span class="preset-btn" data-min="5">5</span>
+                            <span class="preset-btn" data-min="15">15</span>
+                            <span class="preset-btn" data-min="25">25</span>
+                            <span class="preset-btn" data-min="45">45</span>
+                        </div>
+                        <span class="side-label">süre seç:</span>
+                        <div class="dark-box input-box">
+                            <input type="number" id="time-input" placeholder="dk" min="1">
+                        </div>
+                        <span class="text-btn small-btn" id="btn-start-timer">başla</span>
+                    </div>
+
+                    <!-- ADIM 4: Sayaç -->
+                    <div id="step-4-timer" class="action-area flex-row hidden">
+                        <span class="side-label">kalan zaman:</span>
+                        <div class="dark-box timer-box" id="time-display">00:00</div>
+                        <span class="text-btn small-btn" id="btn-pause">duraklat</span>
+                        <span class="text-btn small-btn" id="btn-finish">bitir</span>
+                    </div>
+                    <div class="progress-track hidden" id="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
                 </div>
-                <span class="text-btn small-btn" id="btn-start-timer">başla</span>
-            </div>
 
-            <!-- ADIM 4: Sayaç (Başlangıçta Gizli) -->
-            <div id="step-4-timer" class="action-area flex-row hidden">
-                <span class="side-label">kalan zaman:</span>
-                <div class="dark-box timer-box" id="time-display">
-                    00:00
+                <!-- SAĞ PANEL: Not Defteri -->
+                <div class="right-panel hidden" id="notepad-panel">
+                    <textarea class="notepad-input" placeholder="Bu konu hakkında öğrendiğin bilgileri özetle..."></textarea>
+                    <span class="text-btn small-btn align-right" id="btn-save">kaydet</span>
                 </div>
             </div>
-
         </div>
-
-        <!-- SAĞ PANEL: Not Defteri (Başlangıçta Gizli) -->
-        <div class="right-panel hidden" id="notepad-panel">
-            <textarea class="notepad-input" placeholder="kullanıcının süre bitince not aldığı alan"></textarea>
-            <span class="text-btn small-btn align-right" id="btn-save">kaydet</span>
-        </div>
-
     </div>
 
     <script src="js/app.js"></script>
